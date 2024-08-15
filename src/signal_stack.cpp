@@ -18,12 +18,12 @@ bool signal_stack::build(unsigned _sig, int _flag, handler_t _h) {
     _nact.sa_handler = _h;
     return build(_sig, _nact);
 }
-bool signal_stack::build(unsigned _sig, int _flag, handler_t _h, std::initializer_list<int> _il) {
+bool signal_stack::build(unsigned _sig, int _flag, handler_t _h, std::initializer_list<int> _mask_list) {
     struct sigaction _nact;
     _nact.sa_flags = _flag;
     sigemptyset(&_nact.sa_mask);
-    for (const auto& _i : _il) {
-        sigaddset(&_nact.sa_mask, _i);
+    for (const auto& _mask : _mask_list) {
+        sigaddset(&_nact.sa_mask, _mask);
     }
     _nact.sa_handler = _h;
     return build(_sig, _nact);

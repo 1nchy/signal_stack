@@ -17,24 +17,60 @@ public:
     signal_stack& operator=(const signal_stack&) = delete;
     ~signal_stack() = default;
     typedef void(*handler_t)(int);
-    // 
-    size_t size() const { return _data.size(); }
-    // whether the signal handler is set
-    bool empty(unsigned) const;
-    // set signal handler
-    bool build(unsigned, handler_t);
-    // set signal handler with flag
-    bool build(unsigned, int, handler_t);
-    // set signal handler with flag and mask
-    bool build(unsigned, int, handler_t, std::initializer_list<int>);
-    // set signal handler
-    bool build(unsigned, struct sigaction);
-    // restore previous signal handler
-    bool restore(unsigned);
-    // set initial handler
-    bool reset(unsigned);
-    // clear all handler of certain signal in stack
-    bool clear(unsigned);
+    /**
+     * @brief return whether the signal handler is set
+     * @param _sig POSIX signal
+     */
+    bool empty(unsigned _sig) const;
+    /**
+     * @brief set handler for specific signal
+     * @param _sig POSIX signal
+     * @param _h handler
+     * @return @c true if success
+     */
+    bool build(unsigned _sig, handler_t _h);
+    /**
+     * @brief set handler for specific signal with flag
+     * @param _sig POSIX signal
+     * @param _flag flag for sigaction
+     * @param _h handler
+     * @return @c true if success
+     */
+    bool build(unsigned _sig, int _flag, handler_t _h);
+    /**
+     * @brief set handler for specific signal with flag and masks
+     * @param _sig POSIX signal
+     * @param _flag flag for sigaction
+     * @param _h handler
+     * @param _mask_list masks for sigaction
+     * @return @c true if success
+     */
+    bool build(unsigned _sig, int _flag, handler_t _h, std::initializer_list<int> _mask_list);
+    /**
+     * @brief set handler for specific signal with sigaction object
+     * @param _sig POSIX signal
+     * @param _nact sigaction object
+     * @return @c true if success
+     */
+    bool build(unsigned _sig, struct sigaction _nact);
+    /**
+     * @brief restore previous handler for specific signal
+     * @param _sig POSIX signal
+     * @return @c true if success
+     */
+    bool restore(unsigned _sig);
+    /**
+     * @brief set initial handler for specific signal
+     * @param _sig POSIX signal
+     * @return @c true if success
+     */
+    bool reset(unsigned _sig);
+    /**
+     * @brief set initial handler and clear all handlers in stack for specific signal
+     * @param _sig POSIX signal
+     * @return @c true if success
+     */
+    bool clear(unsigned _sig);
 private:
 /**
  * When _data[_i].size() == 1, the only element must be initial signal handler.
