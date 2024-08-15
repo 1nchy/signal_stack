@@ -54,6 +54,11 @@ public:
      */
     bool build(unsigned _sig, struct sigaction _nact);
     /**
+     * @brief get newest sigaction for specific signal
+     * @param _sig POSIX signal
+     */
+    struct sigaction back(unsigned _sig) const;
+    /**
      * @brief restore previous handler for specific signal
      * @param _sig POSIX signal
      * @return @c true if success

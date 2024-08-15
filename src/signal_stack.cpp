@@ -39,6 +39,9 @@ bool signal_stack::build(unsigned _sig, struct sigaction _nact) {
     _data[_sig].push_back(_nact);
     return true;
 }
+auto signal_stack::back(unsigned _sig) const -> struct sigaction {
+    return _data.at(_sig).back();
+}
 bool signal_stack::restore(unsigned _sig) {
     if (!_data.contains(_sig)) return true;
     if (_data[_sig].size() <= 1) {
