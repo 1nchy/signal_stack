@@ -37,11 +37,9 @@ auto signal_stack::back(unsigned _sig) const -> struct sigaction {
     if (_actions.contains(_sig) && !_actions.at(_sig).empty()) {
         return _actions.at(_sig).back();
     }
-    struct sigaction _act;
-    _act.sa_flags = 0;
-    sigemptyset(&_act.sa_mask);
-    _act.sa_handler = SIG_DFL;
-    return _act;
+    struct sigaction _origin;
+    sigaction(_sig, nullptr, &_origin);
+    return _origin;
 }
 bool signal_stack::restore(unsigned _sig) {
     std::unique_lock<std::shared_mutex> _lock(_mutex);
@@ -59,10 +57,14 @@ bool signal_stack::ignore(unsigned _sig) {
     std::unique_lock<std::shared_mutex> _lock(_mutex);
     return _M_ignore(_sig);
 }
+bool signal_stack::set_default(unsigned _sig) {
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_set_default(_sig);
+}
 bool signal_stack::has_ignored(unsigned _sig) const {
     std::shared_lock<std::shared_mutex> _lock(_mutex);
     struct sigaction _oact;
-    const int _r = sigaction(_sig, 0, &_oact);
+    const int _r = sigaction(_sig, nullptr, &_oact);
     if (!(_oact.sa_flags & SA_SIGINFO)) {
         return _oact.sa_handler == SIG_IGN;
     }
@@ -71,7 +73,7 @@ bool signal_stack::has_ignored(unsigned _sig) const {
 bool signal_stack::has_defaulted(unsigned _sig) const {
     std::shared_lock<std::shared_mutex> _lock(_mutex);
     struct sigaction _oact;
-    const int _r = sigaction(_sig, 0, &_oact);
+    const int _r = sigaction(_sig, nullptr, &_oact);
     if (!(_oact.sa_flags & SA_SIGINFO)) {
         return _oact.sa_handler == SIG_DFL;
     }
@@ -80,7 +82,7 @@ bool signal_stack::has_defaulted(unsigned _sig) const {
 bool signal_stack::has_handled(unsigned _sig) const {
     std::shared_lock<std::shared_mutex> _lock(_mutex);
     struct sigaction _oact;
-    const int _r = sigaction(_sig, 0, &_oact);
+    const int _r = sigaction(_sig, nullptr, &_oact);
     if (!(_oact.sa_flags & SA_SIGINFO)) {
         return _oact.sa_handler != SIG_IGN && _oact.sa_handler != SIG_DFL;
     }
@@ -116,38 +118,60 @@ bool signal_stack::_M_build(unsigned _sig, struct sigaction _nact) {
     const int _r = sigaction(_sig, &_nact, &_oact);
     if (_r == -1) return false;
     if (_actions[_sig].empty()) {
-        // _actions[_sig] = {_oact};
         _actions[_sig].push_back(_oact);
     }
     _actions[_sig].push_back(_nact);
     return true;
 }
 bool signal_stack::_M_restore(unsigned _sig) {
-    if (!_actions.contains(_sig)) return true;
-    if (_actions[_sig].size() <= 1) {
-        _actions[_sig].clear();
-        _actions.erase(_sig);
+    auto& _action = _actions[_sig];
+    if (_action.empty()) {
+        struct sigaction _origin;
+        const int _r = sigaction(_sig, nullptr, &_origin);
+        if (_r == -1) return false;
+        _action.push_back(_origin);
         return true;
     }
-    auto& _act = _actions[_sig].at(_actions[_sig].size() - 2);
+    if (_action.size() == 1) return true;
+    auto& _act = _action.at(_action.size() - 2);
     const int _r = sigaction(_sig, &_act, nullptr);
     if (_r == -1) return false;
-    _actions[_sig].pop_back();
+    _action.pop_back();
     return true;
 }
 bool signal_stack::_M_reset(unsigned _sig) {
-    return _M_build(_sig, SIG_DFL);
+    auto& _action = _actions[_sig];
+    if (_action.empty()) {
+        struct sigaction _origin;
+        const int _r = sigaction(_sig, nullptr, &_origin);
+        if (_r == -1) return false;
+        _action.push_back(_origin);
+        _action.push_back(_origin); // yes, push twice
+        return true;
+    }
+    if (_action.size() == 1) {
+        _action.push_back(_action.back());
+        return true;
+    }
+    auto& _origin = _action.front();
+    const int _r = sigaction(_sig, &_origin, nullptr);
+    if (_r == -1) return false;
+    _action.push_back(_origin);
+    return true;
 }
 bool signal_stack::_M_clear(unsigned _sig) {
     if (!_M_reset(_sig)) {
         return false;
     }
-    _actions[_sig].clear();
-    _actions.erase(_sig);
+    auto& _action = _actions[_sig];
+    _action.erase(_action.cbegin() + 1, _action.cend());
     return true;
 }
 bool signal_stack::_M_ignore(unsigned _sig) {
     return _M_build(_sig, SIG_IGN);
+}
+bool signal_stack::_M_set_default(unsigned _sig) {
+    return _M_build(_sig, SIG_DFL);
 }
 
 

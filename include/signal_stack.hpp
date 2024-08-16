@@ -45,7 +45,7 @@ public: // for signal actions
      */
     bool build(unsigned _sig, struct sigaction _nact);
     /**
-     * @brief get newest sigaction for specific signal
+     * @brief get current sigaction for specific signal
      * @param _sig POSIX signal
      */
     struct sigaction back(unsigned _sig) const;
@@ -73,6 +73,12 @@ public: // for signal actions
      * @return @c true if success
      */
     bool ignore(unsigned _sig);
+    /**
+     * @brief set default handler for specific signal
+     * @param _sig POSIX signal
+     * @return @c true if success
+     */
+    bool set_default(unsigned _sig);
     /**
      * @brief has the specific signal been ignored
      * @param _sig POSIX signal
@@ -117,6 +123,7 @@ private: // for signal actions
     bool _M_reset(unsigned _sig);
     bool _M_clear(unsigned _sig);
     bool _M_ignore(unsigned _sig);
+    bool _M_set_default(unsigned _sig);
 private: // for signal masks
     using sigset_operator = int(*)(sigset_t*, int);
     template <typename... _Args> void _M_expand_package(sigset_t* const _s, sigset_operator _op, unsigned _sig, _Args&&... _sigs) const;
