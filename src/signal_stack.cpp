@@ -1,34 +1,70 @@
 #include "signal_stack.hpp"
 
+#include <thread>
+
 namespace icy {
 
 bool signal_stack::empty(unsigned _sig) const {
+    std::shared_lock<std::shared_mutex> _lock(_mutex);
     if (!_data.contains(_sig) || _data.at(_sig).size() <= 1) {
         return true;
     }
     return false;
 }
-bool signal_stack::build(unsigned _sig, handler_t _h) {
-    return build(_sig, 0, _h);
-}
-bool signal_stack::build(unsigned _sig, int _flag, handler_t _h) {
+bool signal_stack::build(unsigned _sig, handler_t _h, int _flags) {
     struct sigaction _nact;
-    _nact.sa_flags = _flag;
+    _nact.sa_flags = _flags;
     sigemptyset(&_nact.sa_mask);
     _nact.sa_handler = _h;
-    return build(_sig, _nact);
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_build(_sig, _nact);
 }
-bool signal_stack::build(unsigned _sig, int _flag, handler_t _h, std::initializer_list<int> _mask_list) {
+bool signal_stack::build(unsigned _sig, handler_t _h, int _flags, std::initializer_list<int> _mask_list) {
     struct sigaction _nact;
-    _nact.sa_flags = _flag;
+    _nact.sa_flags = _flags;
     sigemptyset(&_nact.sa_mask);
     for (const auto& _mask : _mask_list) {
         sigaddset(&_nact.sa_mask, _mask);
     }
     _nact.sa_handler = _h;
-    return build(_sig, _nact);
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_build(_sig, _nact);
 }
 bool signal_stack::build(unsigned _sig, struct sigaction _nact) {
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_build(_sig, _nact);
+}
+auto signal_stack::back(unsigned _sig) const -> struct sigaction {
+    std::shared_lock<std::shared_mutex> _lock(_mutex);
+    return _data.at(_sig).back();
+}
+bool signal_stack::restore(unsigned _sig) {
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_restore(_sig);
+}
+bool signal_stack::reset(unsigned _sig) {
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_reset(_sig);
+}
+bool signal_stack::clear(unsigned _sig) {
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_clear(_sig);
+}
+bool signal_stack::ignore(unsigned _sig) {
+    std::unique_lock<std::shared_mutex> _lock(_mutex);
+    return _M_ignore(_sig);
+}
+
+
+
+bool signal_stack::_M_build(unsigned _sig, handler_t _h, int _flags) {
+    struct sigaction _nact;
+    _nact.sa_flags = _flags;
+    sigemptyset(&_nact.sa_mask);
+    _nact.sa_handler = _h;
+    return _M_build(_sig, _nact);
+}
+bool signal_stack::_M_build(unsigned _sig, struct sigaction _nact) { ///////////////////////////////////
     struct sigaction _oact;
     const int _r = sigaction(_sig, &_nact, &_oact);
     if (_r == -1) return false;
@@ -39,10 +75,7 @@ bool signal_stack::build(unsigned _sig, struct sigaction _nact) {
     _data[_sig].push_back(_nact);
     return true;
 }
-auto signal_stack::back(unsigned _sig) const -> struct sigaction {
-    return _data.at(_sig).back();
-}
-bool signal_stack::restore(unsigned _sig) {
+bool signal_stack::_M_restore(unsigned _sig) {
     if (!_data.contains(_sig)) return true;
     if (_data[_sig].size() <= 1) {
         _data[_sig].clear();
@@ -55,25 +88,18 @@ bool signal_stack::restore(unsigned _sig) {
     _data[_sig].pop_back();
     return true;
 }
-bool signal_stack::reset(unsigned _sig) {
-    if (empty(_sig)) {
-        return true;
-    }
-    const int _r = sigaction(_sig, &_data[_sig].front(), nullptr);
-    if (_r == -1) return false;
-    _data[_sig].push_back(_data[_sig].front());
-    return true;
+bool signal_stack::_M_reset(unsigned _sig) {
+    return _M_build(_sig, SIG_DFL);
 }
-bool signal_stack::clear(unsigned _sig) {
-    if (!_data.contains(_sig)) return true;
-    if (_data[_sig].size() <= 1) {
-        _data.erase(_sig);
-        return true;
+bool signal_stack::_M_clear(unsigned _sig) {
+    if (!_M_reset(_sig)) {
+        return false;
     }
-    const int _r = sigaction(_sig, &_data[_sig].front(), nullptr);
-    if (_r == -1) return false;
     _data[_sig].clear();
     _data.erase(_sig);
     return true;
+}
+bool signal_stack::_M_ignore(unsigned _sig) {
+    return _M_build(_sig, SIG_IGN);
 }
 };
