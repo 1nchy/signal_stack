@@ -7,7 +7,7 @@ icy::signal_stack _ss;
 
 int main(void) {
     _ss.build(SIGCHLD, &sig_chld_handler_yes);
-    // _ss.block(SIGCHLD);
+    _ss.block(SIGCHLD);
     system("pwd");
     system("ls");
     _ss.restore_mask();

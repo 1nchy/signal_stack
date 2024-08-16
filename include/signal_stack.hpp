@@ -89,29 +89,9 @@ public: // for signal actions
      */
     bool has_handled(unsigned _sig) const;
 public: // for signal masks
-    /**
-     * @brief block the specific signal
-     * @param _sigs POSIX signals
-     * @return @c true if success
-     */
     template <typename... _Args> bool block(unsigned _sig, _Args&&... _sigs);
-    /**
-     * @brief block all signals except the specific signal
-     * @param _sigs POSIX signals
-     * @return @c true if success
-     */
     template <typename... _Args> bool block_except(unsigned _sig, _Args&&... _sigs);
-    /**
-     * @brief unblock the specific signal
-     * @param _sigs POSIX signals
-     * @return @c true if success
-     */
     template <typename... _Args> bool unblock(unsigned _sig, _Args&&... _sigs);
-    /**
-     * @brief unblock all signals except the specific signal
-     * @param _sigs POSIX signals
-     * @return @c true if success
-     */
     template <typename... _Args> bool unblock_except(unsigned _sig, _Args&&... _sigs);
     /**
      * @brief has the specific signal been blocked
@@ -160,24 +140,44 @@ private:
 };
 
 
+/**
+ * @brief block the specific signal
+ * @param _sigs POSIX signals
+ * @return @c true if success
+ */
 template <typename... _Args> auto signal_stack::block(unsigned _sig, _Args&&... _sigs) -> bool {
     sigset_t _s; sigemptyset(&_s);
     _M_expand_package(&_s, &sigaddset, _sig, std::forward<_Args>(_sigs)...);
     std::unique_lock<std::shared_mutex> _lock(_mutex);
     return _M_block(&_s);
 };
+/**
+ * @brief block all signals except the specific signal
+ * @param _sigs POSIX signals
+ * @return @c true if success
+ */
 template <typename... _Args> auto signal_stack::block_except(unsigned _sig, _Args&&... _sigs) -> bool {
     sigset_t _s; sigfillset(&_s);
     _M_expand_package(&_s, &sigdelset, _sig, std::forward<_Args>(_sigs)...);
     std::unique_lock<std::shared_mutex> _lock(_mutex);
     return _M_block(&_s);
 };
+/**
+ * @brief unblock the specific signal
+ * @param _sigs POSIX signals
+ * @return @c true if success
+ */
 template <typename... _Args> auto signal_stack::unblock(unsigned _sig, _Args&&... _sigs) -> bool {
     sigset_t _s; sigemptyset(&_s);
     _M_expand_package(&_s, &sigaddset, _sig, std::forward<_Args>(_sigs)...);
     std::unique_lock<std::shared_mutex> _lock(_mutex);
     return _M_unblock(&_s);
 };
+/**
+ * @brief unblock all signals except the specific signal
+ * @param _sigs POSIX signals
+ * @return @c true if success
+ */
 template <typename... _Args> auto signal_stack::unblock_except(unsigned _sig, _Args&&... _sigs) -> bool {
     sigset_t _s; sigfillset(&_s);
     _M_expand_package(&_s, &sigdelset, _sig, std::forward<_Args>(_sigs)...);
