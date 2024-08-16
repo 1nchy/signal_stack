@@ -91,7 +91,7 @@ bool signal_stack::_M_build(unsigned _sig, handler_t _h, int _flags) {
     _nact.sa_handler = _h;
     return _M_build(_sig, _nact);
 }
-bool signal_stack::_M_build(unsigned _sig, struct sigaction _nact) { ///////////////////////////////////
+bool signal_stack::_M_build(unsigned _sig, struct sigaction _nact) {
     struct sigaction _oact;
     const int _r = sigaction(_sig, &_nact, &_oact);
     if (_r == -1) return false;
