@@ -21,11 +21,6 @@ public:
     typedef void(*handler_t)(int);
 public:
     /**
-     * @brief return whether the signal handler is set
-     * @param _sig POSIX signal
-     */
-    bool empty(unsigned _sig) const;
-    /**
      * @brief set handler for specific signal with flag
      * @param _sig POSIX signal
      * @param _h handler
@@ -78,6 +73,21 @@ public:
      * @return @c true if success
      */
     bool ignore(unsigned _sig);
+    /**
+     * @brief has the specific signal been ignored
+     * @param _sig POSIX signal
+     */
+    bool has_ignored(unsigned _sig) const;
+    /**
+     * @brief has the specific signal been handled as the default action
+     * @param _sig POSIX signal
+     */
+    bool has_defaulted(unsigned _sig) const;
+    /**
+     * @brief has the specific signal been handled as any action (exclude default action)
+     * @param _sig POSIX signal
+     */
+    bool has_handled(unsigned _sig) const;
 private:
     bool _M_build(unsigned _sig, handler_t _h, int _flag = 0);
     bool _M_build(unsigned _sig, struct sigaction _nact);
