@@ -42,9 +42,8 @@ jobs:
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
-        LIB_NAME: $(basename ${GITHUB_REPOSITORY})
       with:
         upload_url: ${{steps.create_release.outputs.upload_url}}
-        asset_path: ./lib/lib${{env.LIB_NAME}}.a
-        asset_name: lib${{env.LIB_NAME}}.a
+        asset_path: ./lib/lib${{github.event.repository.name}}.a
+        asset_name: lib${{github.event.repository.name}}.a
         asset_content_type: application/octet-stream
