@@ -45,6 +45,6 @@ jobs:
         LIB_NAME: $(basename ${GITHUB_REPOSITORY})
       with:
         upload_url: ${{steps.create_release.outputs.upload_url}}
-        asset_path: ./lib/lib${{LIB_NAME}}.a
-        asset_name: lib${{LIB_NAME}}.a
+        asset_path: ./lib/lib${{env.LIB_NAME}}.a
+        asset_name: lib${{env.LIB_NAME}}.a
         asset_content_type: application/octet-stream
