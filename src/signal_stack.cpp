@@ -2,6 +2,8 @@
 
 #include <thread>
 
+#include <tuple>
+
 namespace icy {
 
 signal_stack::signal_stack() {
@@ -64,7 +66,7 @@ bool signal_stack::set_default(unsigned _sig) {
 bool signal_stack::has_ignored(unsigned _sig) const {
     std::shared_lock<std::shared_mutex> _lock(_mutex);
     struct sigaction _oact;
-    const int _r = sigaction(_sig, nullptr, &_oact);
+    std::ignore = sigaction(_sig, nullptr, &_oact);
     if (!(_oact.sa_flags & SA_SIGINFO)) {
         return _oact.sa_handler == SIG_IGN;
     }
@@ -73,7 +75,7 @@ bool signal_stack::has_ignored(unsigned _sig) const {
 bool signal_stack::has_defaulted(unsigned _sig) const {
     std::shared_lock<std::shared_mutex> _lock(_mutex);
     struct sigaction _oact;
-    const int _r = sigaction(_sig, nullptr, &_oact);
+    std::ignore = sigaction(_sig, nullptr, &_oact);
     if (!(_oact.sa_flags & SA_SIGINFO)) {
         return _oact.sa_handler == SIG_DFL;
     }
@@ -82,7 +84,7 @@ bool signal_stack::has_defaulted(unsigned _sig) const {
 bool signal_stack::has_handled(unsigned _sig) const {
     std::shared_lock<std::shared_mutex> _lock(_mutex);
     struct sigaction _oact;
-    const int _r = sigaction(_sig, nullptr, &_oact);
+    std::ignore = sigaction(_sig, nullptr, &_oact);
     if (!(_oact.sa_flags & SA_SIGINFO)) {
         return _oact.sa_handler != SIG_IGN && _oact.sa_handler != SIG_DFL;
     }

@@ -1,0 +1,50 @@
+name: Build and Deploy Third Lib
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        ref: master
+    - name: setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20.x"
+    - name: mkdir
+      run: |
+        mkdir -p build
+    - name: cmake
+      run: |
+        cd build
+        cmake ..
+    - name: make
+      run: |
+        cd build
+        make
+    - name: create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
+      with:
+        tag_name: ${{github.ref}}
+        release_name: Release ${{github.ref_name}}
+        draft: false
+        prerelease: false
+    - name: upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
+        LIB_NAME: $(basename ${GITHUB_REPOSITORY})
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./lib/lib${{LIB_NAME}}.a
+        asset_name: lib${{LIB_NAME}}.a
+        asset_content_type: application/octet-stream
